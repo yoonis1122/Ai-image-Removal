@@ -1,4 +1,6 @@
-import {WebHook} from 'svix'
+import pkg from 'svix'
+const { Webhook } = pkg
+
 import userModel from '../models/userModel.js';
 
 // api controller funtion to manage clerk user with database 
@@ -20,8 +22,8 @@ const clerkWebhooks = async (req, res) => {
             case "user.created":{
 
                 const userData = {
-                    clerkid: data.id,
-                    email: data.email_addresses[0].email_address,
+                    clerkId: data.id,
+                    email: data.email_addresses && data.email_addresses[0] ? data.email_addresses[0].email_address : "unknown@email.com",
                     firstName: data.first_name,
                     lastName: data.last_name,
                     photo:data.image_url,
@@ -37,13 +39,13 @@ const clerkWebhooks = async (req, res) => {
 
                 const userData = {
                    
-                    email: data.email_addresses[0].email_address,
+                    email: data.email_addresses && data.email_addresses[0] ? data.email_addresses[0].email_address : "unknown@email.com",
                     firstName: data.first_name,
                     lastName: data.last_name,
                     photo:data.image_url,
                 }
 
-                await userModel.findOneAndUpdate({clerkid:data.id}, userData);
+                await userModel.findOneAndUpdate({clerkId:data.id}, userData);
                 res.json({success: true, message:"User updated successfully"})
 
                 break;
@@ -51,7 +53,7 @@ const clerkWebhooks = async (req, res) => {
             }
 
             case "user.deleted":{
-                await userModel.findOneAndDelete({clerkid:data.id});
+                await userModel.findOneAndDelete({clerkId:data.id});
                 res.json({success: true, message:"User deleted successfully"})
                 break;
 
@@ -70,4 +72,35 @@ const clerkWebhooks = async (req, res) => {
     
 }
 
-export  {clerkWebhooks}
+
+
+
+//api usercredits contoller function to get user available credits data
+
+const userCredits = async (req, res) => {
+    try {
+        const clerkid = req.clerkid;
+
+        let userData = await userModel.findOne({ clerkId: clerkid });
+
+        if(!userData){
+            // Development Fallback: If webhook didn't catch the user creation, create them dynamically
+            userData = await userModel.create({
+                clerkId: clerkid,
+                email: "unknown@email.com",
+                photo: "https://www.gravatar.com/avatar/?d=mp",
+                firstName: "User",
+                lastName: "",
+                creditBalance: 1000
+            })
+        }
+
+        res.json({success: true, credits:userData.creditBalance})
+        
+    } catch (error) {
+        console.log(error.message);
+        res.json({success: false, message:error.message})
+    }
+}
+
+export {clerkWebhooks, userCredits}

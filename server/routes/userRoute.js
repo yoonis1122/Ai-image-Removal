@@ -1,8 +1,11 @@
 import express from 'express';
-import { clerkWebhooks } from '../controllers/userContoroller.js';
+import { clerkWebhooks, userCredits } from '../controllers/userContoroller.js';
+import authUser from '../middlewares/auth.js';
 
 const useRouter = express.Router();
 
 useRouter.post("/webhooks", clerkWebhooks);
+
+useRouter.get("/credits", authUser, userCredits);
 
 export default useRouter;
